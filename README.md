@@ -105,11 +105,24 @@ $namMax = (int) date('Y') + 1;
 for ($y = $namMax; $y >= 1900; $y--) { /* ... */ }
 ```
 
+## Vá tạm bằng Chrome DevTools
+
+Chưa sửa được source ngay thì dán `dist/fix-2026.js` vào Chrome DevTools
+Console: script mở khoá dropdown năm sinh và tính lại can chi / nạp âm / cung
+mệnh ngay tại trình duyệt. Chi tiết: [`docs/chrome-devtools.md`](docs/chrome-devtools.md).
+
+Script chỉ sửa được phần chạy trong trình duyệt. Nếu điểm số do máy chủ chấm
+thì vẫn phải sửa code phía máy chủ — chạy `await PT2026.kiemTraMayChu(2026)`
+trong Console để biết lỗi nằm ở đâu.
+
 ## Kiểm thử
 
 ```bash
 php tests/chay.php    # 45 kiểm thử: ngày Tết, can chi, nạp âm, cung mệnh, 1900-2099
 node tests/chay.js    # bản JS + đối chiếu kết quả với bản PHP
+
+# 25 kiểm thử chạy trên Chromium thật, cần playwright
+NODE_PATH=/opt/node22/lib/node_modules node tests/chay-trinh-duyet.js
 ```
 
 Ngày Tết do thư viện tính được đối chiếu với lịch đã công bố cho các năm 1990,
@@ -129,9 +142,14 @@ toàn dải 1900-2099 (`tools/xuat-moc.php` sinh mốc đối chiếu).
 src/AmLich.php      đổi dương lịch sang âm lịch, tìm ngày Tết
 src/NamSinh.php     can chi, nạp âm, ngũ hành, cung mệnh
 src/nam-sinh.js     bản JavaScript tương đương
+src/va-devtools.js  lớp vá chạy trong Chrome DevTools
+dist/fix-2026.js    bản đóng gói để dán vào Console (sinh tự động)
 tests/chay.php      kiểm thử PHP
 tests/chay.js       kiểm thử JS và đối chiếu với PHP
+tests/chay-trinh-duyet.js  kiểm thử bản vá bằng Chromium
 tools/bang-tra.php  in bảng tra cứu Markdown
 tools/xuat-moc.php  xuất mốc đối chiếu cho bản JS
+tools/dong-goi.js   dựng dist/fix-2026.js
 docs/bang-nam.md    bảng tra cứu 2026-2045
+docs/chrome-devtools.md  hướng dẫn vá tạm bằng DevTools
 ```

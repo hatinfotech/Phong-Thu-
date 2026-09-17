@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- Trang giả mô phỏng chỗ bị chặn năm 2025, chỉ dùng để kiểm thử dist/fix-2026.js -->
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Chấm điểm tên (trang giả)</title>
+</head>
+<body>
+  <form id="frm">
+    <select name="ngaysinh" id="ngaysinh"></select>
+    <select name="thangsinh" id="thangsinh"></select>
+    <select name="namsinh" id="namsinh"></select>
+    <select name="gioitinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+    <input type="number" name="namsinh_nhap" id="namsinh_nhap" min="1900" max="2025">
+  </form>
+
+  <div id="ketqua">
+    <p>Năm sinh: <span id="canchi">Ất Tỵ</span></p>
+    <p>Mệnh: <span id="napam">Phú Đăng Hỏa</span></p>
+  </div>
+
+  <script>
+    // đổ ngày, tháng
+    for (var d = 1; d <= 31; d++) ngaysinh.add(new Option(d, d));
+    for (var m = 1; m <= 12; m++) thangsinh.add(new Option(m, m));
+
+    // đây chính là kiểu code gây lỗi: cận trên nhập cứng
+    for (var y = 2025; y >= 1900; y--) namsinh.add(new Option(y, y));
+  </script>
+</body>
+</html>
