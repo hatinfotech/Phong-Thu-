@@ -42,7 +42,15 @@ PT2026.hienBang(14, 9, 2026, 'Nam') // bảng nổi góc phải
 PT2026.suaVanBan()                  // thay chữ hiển thị sai trong trang
 await PT2026.kiemTraMayChu(2026)    // máy chủ có tính được 2026 không
 PT2026.NamSinh.canChi(2026)         // 'Bính Ngọ'
+
+copy(PT2026.baoCao())               // chép báo cáo gọn để gửi đi
+copy(await PT2026.baoCaoDayDu())    // báo cáo kèm kết quả hỏi thử máy chủ
 ```
+
+`baoCao()` trả về JSON gồm: tình trạng dropdown **trước** khi vá (chụp lại
+trước khi script đụng vào) và sau khi vá, các `<input max>` đang chặn, danh sách
+file JS của trang, những dòng script có năm gắn cứng, giá trị đúng phải ra, và
+trang đang thực sự hiển thị gì. Chép rồi gửi là đủ để biết phải sửa ở đâu.
 
 Gọi không tham số thì script tự đọc `ngaysinh`, `thangsinh`, `namsinh`,
 `gioitinh` trên URL, không có thì đọc từ các ô trong form.

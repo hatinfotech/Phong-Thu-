@@ -453,6 +453,56 @@ var PT = (function () {
     });
   }
 
+  function catBot(chuoi, dai) {
+    chuoi = String(chuoi).replace(/\s+/g, ' ').trim();
+
+    return chuoi.length > dai ? chuoi.slice(0, dai) + '…' : chuoi;
+  }
+
+  /** Chữ đang hiện trên trang, không tính bảng nổi do script tự thêm. */
+  function chuTrenTrang() {
+    var bang = document.getElementById(TEN_NHAN + '-bang');
+    if (!bang) {
+      return document.body.innerText || '';
+    }
+
+    var giu = bang.style.display;
+    bang.style.display = 'none';
+    var chu = document.body.innerText || '';
+    bang.style.display = giu;
+
+    return chu;
+  }
+
+  /** Ảnh chụp tình trạng các ô năm sinh trên trang. */
+  function trangThaiNam() {
+    return {
+      select: timSelectNam().map(function (sel) {
+        var ds = [].slice.call(sel.options).map(soNam).filter(function (n) { return n !== null; });
+
+        return {
+          ten: sel.name || sel.id || '?',
+          soLuong: ds.length,
+          min: ds.length ? Math.min.apply(null, ds) : null,
+          max: ds.length ? Math.max.apply(null, ds) : null,
+          mauOption: sel.options[0] ? catBot(sel.options[0].outerHTML, 120) : null
+        };
+      }),
+      input: timInputNam().map(function (el) {
+        return { ten: el.name || el.id, min: el.getAttribute('min'), max: el.getAttribute('max') };
+      })
+    };
+  }
+
+  /** Trạng thái trước khi script đụng vào trang, chụp một lần duy nhất. */
+  var banDau = null;
+
+  function ghiNhoBanDau() {
+    if (banDau === null) {
+      banDau = trangThaiNam();
+    }
+  }
+
   function namToiDa() {
     return new Date().getFullYear() + 1;
   }
@@ -476,6 +526,7 @@ var PT = (function () {
    */
   function moKhoaNam(den) {
     den = den || namToiDa();
+    ghiNhoBanDau();
 
     var themTong = 0;
     var selects = timSelectNam();
@@ -706,12 +757,92 @@ var PT = (function () {
 
     if (p.nam) {
       var tt = NamSinh.tuNgaySinh(p.ngay || 1, p.thang || 1, p.nam, p.gioiTinh);
-      var tren = document.body.innerText || '';
+      var tren = chuTrenTrang();
       log('Đúng ra phải là:', tt.canChi + ' / ' + tt.napAm + ' / cung ' + tt.cungMenh.cung);
       log('Trang đang hiển thị "' + tt.canChi + '": ' + (tren.indexOf(tt.canChi) !== -1 ? 'có' : 'KHÔNG'));
     }
 
     console.groupEnd();
+  }
+
+  /**
+   * Gom một báo cáo gọn về tình trạng trang, để copy gửi đi.
+   *
+   *   copy(PT2026.baoCao())              // đồng bộ, không hỏi máy chủ
+   *   copy(await PT2026.baoCaoDayDu())   // có kèm kết quả hỏi thử máy chủ
+   */
+  function baoCao() {
+    var p = thamSo();
+
+    ghiNhoBanDau();
+
+    var bc = {
+      url: location.href.split('#')[0],
+      namNay: new Date().getFullYear(),
+      thamSo: p,
+      truocKhiVa: banDau,
+      sauKhiVa: trangThaiNam(),
+      scriptNgoai: [].slice.call(document.querySelectorAll('script[src]'))
+        .map(function (s) { return s.getAttribute('src'); })
+        .slice(0, 20),
+      scriptNoiDungNghiNgo: [],
+      formAction: (function () {
+        var f = document.querySelector('form');
+        return f ? { action: f.getAttribute('action'), method: f.getAttribute('method') } : null;
+      }())
+    };
+
+    // tìm đoạn script gắn năm cứng — chỗ nhiều khả năng phải sửa
+    [].slice.call(document.querySelectorAll('script:not([src])')).forEach(function (s) {
+      var m = s.textContent.match(/[^\n]{0,90}\b(19|20)\d{2}\b[^\n]{0,90}/g);
+      if (!m) {
+        return;
+      }
+      m.filter(function (d) {
+        return /for\s*\(|while\s*\(|new Option|appendChild|option|nam|year/i.test(d);
+      }).slice(0, 5).forEach(function (d) {
+        if (bc.scriptNoiDungNghiNgo.length < 10) {
+          bc.scriptNoiDungNghiNgo.push(catBot(d, 180));
+        }
+      });
+    });
+
+    if (p.nam) {
+      var tt = NamSinh.tuNgaySinh(p.ngay || 1, p.thang || 1, p.nam, p.gioiTinh);
+      var chu = chuTrenTrang();
+      bc.dungRaPhaiLa = {
+        namAm: tt.namAm, canChi: tt.canChi, napAm: tt.napAm, cung: tt.cungMenh.cung
+      };
+      bc.trangDangHienThi = {
+        coCanChiDung: chu.indexOf(tt.canChi) !== -1,
+        coNapAmDung: chu.indexOf(tt.napAm) !== -1,
+        coCanChiNamTruoc: chu.indexOf(NamSinh.canChi(tt.namAm - 1)) !== -1
+      };
+    }
+
+    return JSON.stringify(bc, null, 2);
+  }
+
+  /** baoCao() kèm kết quả hỏi thử máy chủ với năm mới. */
+  function baoCaoDayDu(nam) {
+    nam = nam || namToiDa();
+
+    return kiemTraMayChu(nam).then(function (kq) {
+      var bc = JSON.parse(baoCao());
+      bc.mayChu = {
+        nam: kq.nam,
+        tinhDuoc: kq.mayChuTinhDuoc,
+        coCanChiNamTruoc: kq.html.indexOf(NamSinh.canChi(nam - 1)) !== -1,
+        doDaiHtml: kq.html.length
+      };
+
+      return JSON.stringify(bc, null, 2);
+    }).catch(function () {
+      var bc = JSON.parse(baoCao());
+      bc.mayChu = { nam: nam, loi: 'không hỏi được máy chủ' };
+
+      return JSON.stringify(bc, null, 2);
+    });
   }
 
   /** Mở khoá dropdown + hiện bảng kết quả (chạy sẵn khi dán script). */
@@ -737,6 +868,9 @@ var PT = (function () {
     hienBang: hienBang,
     suaVanBan: suaVanBan,
     kiemTraMayChu: kiemTraMayChu,
+    trangThaiNam: trangThaiNam,
+    baoCao: baoCao,
+    baoCaoDayDu: baoCaoDayDu,
     tuDong: tuDong,
     thamSo: thamSo
   };

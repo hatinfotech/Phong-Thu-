@@ -121,7 +121,7 @@ trong Console để biết lỗi nằm ở đâu.
 php tests/chay.php    # 45 kiểm thử: ngày Tết, can chi, nạp âm, cung mệnh, 1900-2099
 node tests/chay.js    # bản JS + đối chiếu kết quả với bản PHP
 
-# 25 kiểm thử chạy trên Chromium thật, cần playwright
+# 37 kiểm thử chạy trên Chromium thật, cần playwright
 NODE_PATH=/opt/node22/lib/node_modules node tests/chay-trinh-duyet.js
 ```
 

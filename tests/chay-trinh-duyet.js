@@ -140,6 +140,37 @@ function ktra(ten, nhan, mongDoi) {
     return document.getElementById('pt2026-bang');
   }), null);
 
+  console.log('\nBáo cáo để gửi đi');
+  var bc = JSON.parse(await page2.evaluate(function () { return PT2026.baoCao(); }));
+
+  ktra('báo cáo là JSON hợp lệ', typeof bc, 'object');
+  ktra('ghi nhận select năm sinh', bc.truocKhiVa.select.length >= 1, true);
+  ktra('trạng thái gốc: max = 2025', bc.truocKhiVa.select[0].max, 2025);
+  ktra('trạng thái gốc: input max = 2025', bc.truocKhiVa.input[0].max, '2025');
+  ktra('sau khi vá: max = năm nay + 1', bc.sauKhiVa.select[0].max, namNay + 1);
+  ktra('ghi nhận tham số', [bc.thamSo.nam, bc.thamSo.gioiTinh], [2026, 'Nam']);
+  ktra('ghi nhận giá trị đúng', [bc.dungRaPhaiLa.canChi, bc.dungRaPhaiLa.cung], ['Bính Ngọ', 'Cấn']);
+  ktra('bắt được dòng script gắn năm cứng', bc.scriptNoiDungNghiNgo.some(function (d) {
+    return d.indexOf('2025') !== -1 && /for\s*\(/.test(d);
+  }), true);
+  ktra('báo cáo đủ gọn để dán', JSON.stringify(bc).length < 8000, true);
+  ktra('báo cáo sau suaVanBan: trang đã hiện đúng', [
+    bc.trangDangHienThi.coCanChiDung, bc.trangDangHienThi.coCanChiNamTruoc
+  ], [true, false]);
+
+  // trang sạch: bảng nổi của script không được tính là "trang đang hiển thị đúng"
+  var pageSach = await browser.newPage();
+  await pageSach.goto(trang + '?ngaysinh=14&thangsinh=9&namsinh=2026&gioitinh=Nam');
+  await pageSach.evaluate(script);
+  var bcSach = JSON.parse(await pageSach.evaluate(function () { return PT2026.baoCao(); }));
+
+  ktra('bảng nổi đang hiện', await pageSach.evaluate(function () {
+    return !!document.getElementById('pt2026-bang');
+  }), true);
+  ktra('không tính bảng nổi vào chữ trên trang', [
+    bcSach.trangDangHienThi.coCanChiDung, bcSach.trangDangHienThi.coCanChiNamTruoc
+  ], [false, true]);
+
   // --- 3. select xếp tăng dần, và trang đã có biến NamSinh riêng
   var page4 = await browser.newPage();
   await page4.setContent(
